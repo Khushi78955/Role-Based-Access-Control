@@ -4,6 +4,8 @@ const router = express.Router();
 
 const authMiddleware = require("../middlewares/authMiddleware")
 
+const User = require("../models/User");
+
 router.get(
     "/me",
     authMiddleware,
@@ -11,6 +13,35 @@ router.get(
         return res.status(200).json({
             user: req.user
         })
+    }
+)
+
+router.put(
+    "update-profile",
+    authMiddleware,
+    async function(req, res){
+        try{
+            const { name, email } = req.body;
+            const updatedUser = await User.findByIdAndUpdate(
+                req.user.id,
+                {
+                    name,
+                    email
+                },
+                {
+                    new: true
+                },
+            )
+            return res.status(200).json({
+                message: "Profile Updated",
+                updatedUser
+            })
+        } catch(err){
+            return res.status(500).json({
+                message: "Something went wrong"
+            })
+        }
+        
     }
 )
 
