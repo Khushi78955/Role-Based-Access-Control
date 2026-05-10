@@ -75,7 +75,11 @@ async function login(req, res){
             })
         }
 
-        const token = generateToken(user)
+        const token = generateToken(user);
+        res.cookie("token", token, {
+            http: true,
+            secure: false
+        })
 
         return res.status(200).json({
             message: "Login successful",
