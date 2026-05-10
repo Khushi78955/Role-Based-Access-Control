@@ -5,7 +5,7 @@ const app = express();
 
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
-connectDB()
+connectDB();
 
 app.use(express.json());
 
