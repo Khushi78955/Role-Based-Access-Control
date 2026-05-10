@@ -16,8 +16,9 @@ router.get(
     }
 )
 
+
 router.put(
-    "update-profile",
+    "/update-profile",
     authMiddleware,
     async function(req, res){
         try{
@@ -45,4 +46,23 @@ router.put(
     }
 )
 
+
+router.delete(
+    "/delete-account",
+    authMiddleware,
+    async function(req, res){
+        try{
+            await User.findByIdAndDelete(req.user.id);
+            res.clearCookie("token");
+            return res.status(200).json({
+                message: "Account deleted successfully"
+            })
+        } catch(err){
+            return res.status(500).json({
+                message: "Something went wrong"
+            })
+        }
+        
+    }
+)
 module.exports = router

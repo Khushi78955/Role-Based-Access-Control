@@ -78,7 +78,7 @@ async function login(req, res){
 
         const token = generateToken(user);
         res.cookie("token", token, {
-            http: true,
+            httpOnly: true,
             secure: false
         })
 

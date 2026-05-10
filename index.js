@@ -18,7 +18,7 @@ const userRoutes = require("./routes/userRoutes")
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("api/users", userRoutes)
+app.use("/api/users", userRoutes)
 
 app.get("/", function(req, res){
     res.json("Server running")
