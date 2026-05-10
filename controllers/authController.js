@@ -1,10 +1,18 @@
 const User = require("../models/User.js");
 const bcrypt = require("bcrypt");
 const generateToken = require("../utils/generateToken.js");
+const { signupSchema, loginSchema } = require("../validators/authValidation.js")
 
 async function signup(req, res){
     try{
         const { name, email, password } = req.body;
+
+        const result = signupSchema.safeParse(req.body);
+        if(!result.success){
+            return res.status(400).json({
+                message: result.error.issues[0].message
+            })
+        }
 
         const existingUser = await User.findOne({
             email
@@ -41,10 +49,16 @@ async function login(req, res){
     try{
         const {email, password} = req.body;
 
+        const result = loginSchema.safeParse(req.body);
+        if(!result.success){
+            return res.status(400).json({
+                message: result.error.issues[0].message
+            })
+        }
+
         const user = await User.findOne({
             email
         })
-
         if(!user){
             return res.status(400).json({
                 message: "Invalid credentials"
@@ -55,7 +69,6 @@ async function login(req, res){
             password,
             user.password
         )
-
         if(!isMatch){
             return res.status(400).json({
                 message: "Invalid credentials"
