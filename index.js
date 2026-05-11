@@ -5,31 +5,30 @@ const app = express();
 app.use(express.json());
 
 const helmet = require("helmet");
-app.use(helmet)
-
 const limiter = require("./middlewares/rateLimiter");
-app.use(limiter);
+const cookieParser = require("cookie-parser");
+const connectDB = require("./config/db");
 
-const cookieParser = require("cookie-parser")
+app.use(helmet)
+app.use(limiter);
 app.use(cookieParser());
 
-const connectDB = require("./config/db");
 connectDB();
 
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
+const postRoutes = require("./routes/postRoutes");
 
 const notFound = require("./middlewares/notFound");
 const errorMiddleware = require("./middlewares/errorMiddleware");
 
 
 
-
-
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/posts", postRoutes);
 
 app.get("/", function(req, res){
     res.json("Server running")
