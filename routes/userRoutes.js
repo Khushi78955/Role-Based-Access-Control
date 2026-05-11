@@ -40,7 +40,7 @@ router.put("/update-profile", authMiddleware, async function(req, res){
 })
 
 
-router.post("/upload-avatar", authMiddleware, async function(req, res){
+router.post("/upload-avatar", authMiddleware, adminMiddleware, async function(req, res){
     try{
         const result = await cloudinary.uploader.upload(req.file.path);
         const updatedUser = await User.findByIdAndUpdate(
@@ -68,12 +68,27 @@ router.post("/upload-avatar", authMiddleware, async function(req, res){
 
 router.get("/all-users", authMiddleware, adminMiddleware, async function(req, res){
     try{
-        const users = await User.find();
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 5;
+        const skip = (page - 1) * limit;
+        
+        const totalUsers = await User.countDocuments();
+        const totalPages = Math.ceil(totalUsers / limit);
+
+        const users = await User.find()
+                                .skip(skip)
+                                .limit(limit)
+
         return res.status(200).json({
+            currentPage: page,
+            totalPages,
+            totalUsers,
             users
         })
     } catch(err){
-        message: "Something went wrong"
+        return res.status(500).json({
+            message: "Something went wrong"
+        })
     }
     
 })
