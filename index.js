@@ -13,8 +13,9 @@ connectDB();
 
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-const userRoutes = require("./routes/userRoutes")
+const userRoutes = require("./routes/userRoutes");
 
+const notFound = require("./middlewares/notFound");
 const errorMiddleware = require("./middlewares/errorMiddleware")
 
 
@@ -27,13 +28,8 @@ app.get("/", function(req, res){
     res.json("Server running")
 })
 
-app.get("/error", function(req, res, next){
-    const err = new Error("Test error");
-    err.statusCode = 400;
 
-    next(err);
-})
-
+app.use(notFound);
 app.use(errorMiddleware)
 
 
