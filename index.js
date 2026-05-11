@@ -4,6 +4,11 @@ const express = require("express");
 const app = express();
 app.use(express.json());
 
+const helmet = require("helmet");
+app.use(helmet)
+
+const limiter = require("./middlewares/rateLimiter");
+app.use(limiter);
 
 const cookieParser = require("cookie-parser")
 app.use(cookieParser());
@@ -16,7 +21,9 @@ const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 
 const notFound = require("./middlewares/notFound");
-const errorMiddleware = require("./middlewares/errorMiddleware")
+const errorMiddleware = require("./middlewares/errorMiddleware");
+
+
 
 
 
