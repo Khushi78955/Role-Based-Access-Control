@@ -4,6 +4,8 @@ const generateToken = require("../utils/generateToken.js");
 const { signupSchema, loginSchema } = require("../validators/authValidation.js");
 const asyncHandler = require("../middlewares/asyncHandler.js")
 
+const ApiError = require("../utils/ApiError.js")
+
 
 
 const signup = asyncHandler(async function signup(req, res){
@@ -11,18 +13,14 @@ const signup = asyncHandler(async function signup(req, res){
 
         const result = signupSchema.safeParse(req.body);
         if(!result.success){
-            return res.status(400).json({
-                message: result.error.issues[0].message
-            })
+            throw new ApiError(400, result.error.issues[0].message)
         }
 
         const existingUser = await User.findOne({
             email
         })
         if(existingUser){
-            return res.status(400).json({
-                message: "User already exists"
-            })
+            throw new ApiError(400, "User already exists")
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -46,18 +44,14 @@ const login = asyncHandler(async function login(req, res){
 
         const result = loginSchema.safeParse(req.body);
         if(!result.success){
-            return res.status(400).json({
-                message: result.error.issues[0].message
-            })
+            throw new ApiError(400, result.error.issues[0].message)
         }
 
         const user = await User.findOne({
             email
         })
         if(!user){
-            return res.status(400).json({
-                message: "Invalid credentials"
-            })
+            throw new ApiError(400, "Invalid credentials")
         }
 
         const isMatch = await bcrypt.compare(
@@ -65,9 +59,7 @@ const login = asyncHandler(async function login(req, res){
             user.password
         )
         if(!isMatch){
-            return res.status(400).json({
-                message: "Invalid credentials"
-            })
+            throw new ApiError(400, "Invalid credentials")
         }
 
         const token = generateToken(user);
