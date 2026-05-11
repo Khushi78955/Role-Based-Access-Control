@@ -72,12 +72,24 @@ router.get("/all-users", authMiddleware, adminMiddleware, async function(req, re
         const limit = Number(req.query.limit) || 5;
         const skip = (page - 1) * limit;
         
-        const totalUsers = await User.countDocuments();
+        const totalUsers = await User.countDocuments({
+            name:{
+                $regex: search,
+                $options: "i"
+            }
+        });
         const totalPages = Math.ceil(totalUsers / limit);
 
-        const users = await User.find()
-                                .skip(skip)
-                                .limit(limit)
+        const search = req.query.search || "";
+
+        const users = await User.find({
+            name: {
+                $regex: search,
+                $options: "i"
+            }
+        })
+        .skip(skip)
+        .limit(limit)
 
         return res.status(200).json({
             currentPage: page,
