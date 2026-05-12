@@ -49,6 +49,8 @@ router.get("/google/callback",
 })
 
 
+
+
 router.get("/github", passport.authenticate("github", {
     scope: ["user:email"]
 }))
@@ -68,6 +70,31 @@ router.get("/github/callback",
             user: req.user
         })
 })
+
+
+
+
+router.get("/discord", passport.authenticate("discord", {
+    scope: ["identify", "email"]
+}))
+
+
+router.get("/discord/callback", 
+    passport.authenticate("discord", {failureRedirect: "/login"}), 
+    async function(req, res){
+        const token = generateToken(req.user);
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false
+        }) 
+        return res.status(200).json({
+            message: "discord login successful",
+            token,
+            user: req.user
+        })
+})
+
+
 
 
 module.exports = router;

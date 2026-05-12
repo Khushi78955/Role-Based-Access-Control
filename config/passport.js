@@ -2,7 +2,7 @@ const passport = require("passport");
 
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const GitHubStrategy = require("passport-github2").Strategy;
-
+const DiscordStrategy = require("passport-discord").Strategy;
 
 const User = require("../models/User");
 
@@ -54,12 +54,12 @@ passport.use(new GitHubStrategy(
     ){
         try{
             let user = await User.findOne({
-                email: profile.emails[0].value
+                email: profile.emails[0].value,
             })
             if(!user){
                 user = await User.create({
                     name: profile.displayName,
-                    email: profile.email[0].value,
+                    email: profile.emails[0].value,
                     password: "",
                     authProvider: "github",
                     avatar: profile.photos[0].value,
@@ -69,9 +69,40 @@ passport.use(new GitHubStrategy(
             done(null,user)
         } catch(err){
             done(err, null)
-        }
-        
+        } 
     }
 ))
 
 
+passport.use(new DiscordStrategy(
+    {
+        clientID: process.env.DISCORD_CLIENT_ID,
+        clientSecret: process.env.DISCORD_CLIENT_SECRET,
+        callbackURL: "/api/auth/discord/callback"
+    },
+    async function(
+        accessToken,
+        refreshToken,
+        profile,
+        done
+    ){
+        try{
+            let user = await User.findOne({
+                email: profile.email
+            })
+            if(!user){
+                user = await User.create({
+                    name: profile.username,
+                    email: profile.email,
+                    password: "",
+                    authProvider: "discord",
+                    avatar: `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`,
+                    isVerified: true
+                })
+            }
+            done(null,user)
+        } catch(err){
+            done(err, null)
+        } 
+    }
+))
