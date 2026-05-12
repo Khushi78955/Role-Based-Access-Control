@@ -2,12 +2,14 @@ const User = require("../models/User.js");
 const bcrypt = require("bcrypt");
 const generateToken = require("../utils/generateToken.js");
 const generateRefreshToken = require("../utils/generateRefreshToken");
+const generateResetToken = require("../utils/generateResetToken");
+const generateVerificationToken = require("../utils/generateVerificationToken.js")
 const { signupSchema, loginSchema } = require("../validators/authValidation.js");
 const asyncHandler = require("../middlewares/asyncHandler.js")
 const jwt = require("jsonwebtoken")
 
-const ApiError = require("../utils/ApiError.js")
 
+const ApiError = require("../utils/ApiError.js");
 
 
 const signup = asyncHandler(async function signup(req, res){
@@ -27,10 +29,13 @@ const signup = asyncHandler(async function signup(req, res){
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const verificationToken = generateVerificationToken()
+
         const user = await User.create({
             name,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            verificationToken
         })
 
         return res.status(201).json({
@@ -38,7 +43,6 @@ const signup = asyncHandler(async function signup(req, res){
             user
         })  
 });
-
 
 
 const login = asyncHandler(async function login(req, res){
@@ -83,6 +87,26 @@ const login = asyncHandler(async function login(req, res){
         })
 });
 
+const verifyEmail = asyncHandler(async function(req, res){
+    const { token } = req.body;
+
+    const user = await User.findOne({
+        verificationToken: token
+    })
+    if(!user){
+        throw new ApiError(400, "Invalid verification token")
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+
+    await user.save();
+
+    return res.status(200).json({
+        message: "Email verified successfully"
+    })
+})
+
 
 const refreshAccessToken = asyncHandler(async function(req, res){
     const refreshToken = req.cookies.refreshToken;
@@ -113,6 +137,53 @@ const refreshAccessToken = asyncHandler(async function(req, res){
 })
 
 
+const forgotPassword = asyncHandler(async function(req, res){
+    const { email } = req.body;
+
+    const user = await User.findOne({email});
+    if(!user){
+        throw new ApiError(404, "User not found")
+    }
+
+    const resetToken = generateResetToken();
+    user.resetPasswordToken = resetToken;
+
+    user.resetPasswordExpires = Date.now() + 10 * 60 * 1000;        
+    await user.save();
+
+    return res.status(200).json({
+        message: "Password reset token generated",
+        resetToken
+    })
+
+})
+
+
+const resetPassword = asyncHandler(async function(req, res){
+    const { token, newPassword } = req.body
+
+    const user = await User.findOne({
+        resetPasswordToken: token,
+        resetPasswordExpires: {
+            $gt: Date.now()
+        }
+    })
+    if(!user){
+        throw new ApiError(400, "Invalid or expired token")
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+    return res.status(200).json({
+        message: "Password reset successful"
+    })
+
+})
+
+
 const logout = asyncHandler(async function logout(req, res){
         res.clearCookie("token");
         return res.status(200).json({
@@ -124,6 +195,9 @@ module.exports = {
     signup,
     login,
     refreshAccessToken,
-    logout
+    logout, 
+    forgotPassword,
+    resetPassword,
+    verifyEmail
 }
     
