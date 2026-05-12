@@ -5,6 +5,7 @@ const router = express.Router();
 const { signup, login,  refreshAccessToken, logout, forgotPassword, resetPassword, verifyEmail, sendOTP, verifyOTP } = require("../controllers/authController")
 
 const authMiddleware = require("../middlewares/authMiddleware")
+const passport = require("passport")
 
 
 router.post("/signup", signup)
@@ -15,13 +16,34 @@ router.post("/forgotPassword", forgotPassword);
 router.post("/resetPassword", resetPassword);
 router.post("/verify-email", verifyEmail)
 router.post("/send-otp", sendOTP);
-router.post("/verify-otp", verifyOTP)
+router.post("/verify-otp", verifyOTP);
+
+const generateToken = require("../utils/generateToken")
 
 router.get("/profile", authMiddleware, function(req, res){
     return res.status(200).json({
         message: "Profile fetched",
         user: req.user
     })
+})
+
+router.get("/google", passport.authenticate("google", {
+    scope: ["profile", "email"]
+}))
+
+router.get("/google/callback", 
+    passport.authenticate("google", {failureRedirect: "/login"}), 
+    async function(req, res){
+        const token = generateToken(req.user);
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false
+        }) 
+        return res.status(200).json({
+            message: "Google login successful",
+            token,
+            user: req.user
+        })
 })
 
 

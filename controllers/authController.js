@@ -63,6 +63,10 @@ const login = asyncHandler(async function login(req, res){
             throw new ApiError(400, "Invalid credentials")
         }
 
+        if(user.authProvider == "google"){
+            throw new ApiError(400, "Please login using google")
+        }
+
         const isMatch = await bcrypt.compare(
             password,
             user.password
