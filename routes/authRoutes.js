@@ -27,9 +27,11 @@ router.get("/profile", authMiddleware, function(req, res){
     })
 })
 
+
 router.get("/google", passport.authenticate("google", {
     scope: ["profile", "email"]
 }))
+
 
 router.get("/google/callback", 
     passport.authenticate("google", {failureRedirect: "/login"}), 
@@ -41,6 +43,27 @@ router.get("/google/callback",
         }) 
         return res.status(200).json({
             message: "Google login successful",
+            token,
+            user: req.user
+        })
+})
+
+
+router.get("/github", passport.authenticate("github", {
+    scope: ["user:email"]
+}))
+
+
+router.get("/github/callback", 
+    passport.authenticate("github", {failureRedirect: "/login"}), 
+    async function(req, res){
+        const token = generateToken(req.user);
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false
+        }) 
+        return res.status(200).json({
+            message: "Github login successful",
             token,
             user: req.user
         })
