@@ -45,7 +45,15 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ["local", "google", "github", "discord"],
         default: "local"
+    },
+    twoFactorSecret: {
+        type: String
+    },
+    isTwoFactorEnabled: {
+        type: Boolean,
+        default: false
     }
+
 }, {
     timestamps: true
 })

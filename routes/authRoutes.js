@@ -2,7 +2,7 @@ const express = require("express");
 
 const router = express.Router();
 
-const { signup, login,  refreshAccessToken, logout, forgotPassword, resetPassword, verifyEmail, sendOTP, verifyOTP } = require("../controllers/authController")
+const { signup, login,  refreshAccessToken, logout, forgotPassword, resetPassword, verifyEmail, sendOTP, verifyOTP, enableTwoFactor, verifyTwoFactor } = require("../controllers/authController")
 
 const authMiddleware = require("../middlewares/authMiddleware")
 const passport = require("passport")
@@ -17,6 +17,8 @@ router.post("/resetPassword", resetPassword);
 router.post("/verify-email", verifyEmail)
 router.post("/send-otp", sendOTP);
 router.post("/verify-otp", verifyOTP);
+router.post("/enable-2fa", authMiddleware, enableTwoFactor);
+router.post("/verify-2fa", authMiddleware, verifyTwoFactor)
 
 const generateToken = require("../utils/generateToken")
 

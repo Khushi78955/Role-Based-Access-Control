@@ -5,6 +5,8 @@ const generateRefreshToken = require("../utils/generateRefreshToken");
 const generateResetToken = require("../utils/generateResetToken");
 const generateVerificationToken = require("../utils/generateVerificationToken.js");
 const generateOTP = require("../utils/generateOTP");
+const speakeasy = require("speakeasy");
+const QRCode = require("qrcode");
 
 
 const { signupSchema, loginSchema } = require("../validators/authValidation.js");
@@ -93,6 +95,7 @@ const login = asyncHandler(async function login(req, res){
             
         })
 });
+
 
 const verifyEmail = asyncHandler(async function(req, res){
     const { token } = req.body;
@@ -236,6 +239,39 @@ const logout = asyncHandler(async function logout(req, res){
         })
 });
 
+
+const enableTwoFactor = asyncHandler(async function(req, res){
+    const user = await User.findById(req.user.id);
+    const secret = speakeasy.generateSecret({ name: `RoleBasedAuth (${user.email})` });
+    user.twoFactorSecret = secret.base32;
+    await user.save();
+    const qrCode = await QRCode.toDataURL(secret.otpauth_url);
+    return res.status(200).json({
+        message: "2FA setup initiated",
+        qrCode
+    })
+
+})
+
+
+const verifyTwoFactor = asyncHandler(async function(req, res){
+    const {token} = req.body;
+    const user = await User.findById(req.user.id);
+    const verified = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: "base32",
+        token
+    })   
+    if(!verified){
+        throw new ApiError(400, "Invalid 2FA token")
+    } 
+
+    user.isTwoFactorEnabled = true;
+    await user.save();
+    return res.status(200).json({
+        message: "2FA enabled successfully"
+    })
+})
 module.exports = {
     signup,
     login,
@@ -245,6 +281,8 @@ module.exports = {
     resetPassword,
     verifyEmail,
     sendOTP,
-    verifyOTP
+    verifyOTP,
+    enableTwoFactor,
+    verifyTwoFactor
 }
     
