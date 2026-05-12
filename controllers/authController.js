@@ -3,7 +3,10 @@ const bcrypt = require("bcrypt");
 const generateToken = require("../utils/generateToken.js");
 const generateRefreshToken = require("../utils/generateRefreshToken");
 const generateResetToken = require("../utils/generateResetToken");
-const generateVerificationToken = require("../utils/generateVerificationToken.js")
+const generateVerificationToken = require("../utils/generateVerificationToken.js");
+const generateOTP = require("../utils/generateOTP");
+
+
 const { signupSchema, loginSchema } = require("../validators/authValidation.js");
 const asyncHandler = require("../middlewares/asyncHandler.js")
 const jwt = require("jsonwebtoken")
@@ -108,6 +111,44 @@ const verifyEmail = asyncHandler(async function(req, res){
 })
 
 
+const sendOTP = asyncHandler(async function(req, res){
+    const { email } = req.body;
+    const user = await User.findOne({email});
+    if(!user){
+        throw newApiError(404, "User not found")
+    }
+
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpires = Date.now() + 5 * 60 * 1000;
+
+    await user.save();
+
+    return res.status(200).json({
+        message: "OTP generated successfully"
+    })
+})
+
+const verifyOTP = asyncHandler(async function(req, res){
+    const { email, otp } = req.body;
+    const user = await User.findOne({
+        email, 
+        otp,
+        otpExpires: {$gt: Date.now()}
+    })
+    if(!user){
+        throw new ApiError(404, "Invalid or expired OTP");
+    }
+
+    user.otp = undefined;
+    user.otpExpires = undefined;
+
+    await user.save();
+    return res.status(400).json({
+        message: "OTP verified successfully"
+    })
+})
+
 const refreshAccessToken = asyncHandler(async function(req, res){
     const refreshToken = req.cookies.refreshToken;
     if(!refreshToken){
@@ -198,6 +239,8 @@ module.exports = {
     logout, 
     forgotPassword,
     resetPassword,
-    verifyEmail
+    verifyEmail,
+    sendOTP,
+    verifyOTP
 }
     
