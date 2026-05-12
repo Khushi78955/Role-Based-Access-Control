@@ -4,9 +4,9 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 const User = require("../models/User");
 
-passport.use(newGoogleStrategy(
+passport.use(new GoogleStrategy(
     {
-        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         callbackURL: "/api/auth/google/callback"          
     },
@@ -24,8 +24,8 @@ passport.use(newGoogleStrategy(
                 user = await User.create({
                     name: profile.displayName,
                     avatar: profile.photos[0].value,
-                    email: profile.email[0].value,
-                    passport: "",
+                    email: profile.emails[0].value,
+                    password: "",
                     authProvider: "google",
                     isVerified: true
                 })
