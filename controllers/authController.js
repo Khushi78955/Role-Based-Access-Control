@@ -9,6 +9,7 @@ const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
 
 
+
 const { signupSchema, loginSchema } = require("../validators/authValidation.js");
 const asyncHandler = require("../middlewares/asyncHandler.js")
 const jwt = require("jsonwebtoken")
@@ -77,6 +78,13 @@ const login = asyncHandler(async function login(req, res){
             throw new ApiError(400, "Invalid credentials")
         }
 
+        if(user.isTwoFactorEnabled){
+            return res.status(200).json({
+                message: "2FA verification required",
+                requiresTwoFactor: true
+            })
+        }
+
         const token = generateToken(user);
         const refreshToken = generateRefreshToken(user)
 
@@ -96,6 +104,37 @@ const login = asyncHandler(async function login(req, res){
         })
 });
 
+const verifyLoginTwoFactor = asyncHandler(async function(req, res){
+    const {email, token} = req.body;
+    const user = await User.findOne({
+        email
+    })
+    if(!user){
+        throw new ApiError(404, "User not found");
+    }
+
+    const verified = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: "base32",
+        token
+    });
+    if(!verified){
+        throw new ApiError(400, "Invalid 2FA token")
+    }
+
+    const accessToken = generateToken(user);
+    res.cookie("token", accessToken, {
+        httpOnly: true,
+        secure: false
+    })
+    return res.status(200).json({
+        message: "2FA login successful",
+        accessToken
+    })
+
+
+
+})
 
 const verifyEmail = asyncHandler(async function(req, res){
     const { token } = req.body;
@@ -283,6 +322,7 @@ module.exports = {
     sendOTP,
     verifyOTP,
     enableTwoFactor,
-    verifyTwoFactor
+    verifyTwoFactor,
+    verifyLoginTwoFactor
 }
     
