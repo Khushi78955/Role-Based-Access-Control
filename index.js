@@ -17,6 +17,8 @@ const notFound = require("./middlewares/notFound");
 const errorMiddleware = require("./middlewares/errorMiddleware");
 const session = require("express-session");
 
+const { connectRedis } = require("./config/redis")
+connectRedis();
 
 
 app.use(express.json());

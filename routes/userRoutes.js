@@ -7,6 +7,7 @@ const User = require("../models/User");
 const upload = require("../middlewares/uploadMiddleware");
 const cloudinary = require("../config/cloudinary");
 const adminMiddleware = require("../middlewares/adminMiddleware");
+const { redisClient } = require("../config/redis")
 
 router.get("/me", authMiddleware, async function(req, res){
     return res.status(200).json({
@@ -120,4 +121,12 @@ router.delete("/delete-account", authMiddleware, async function(req, res){
     }  
 })
 
+
+router.get("/redis-test", async function(req, res){
+    await redisClient.set("name","khushi")
+    const value = await redisClient.get("name");
+    return res.json({
+        value
+    })
+})
 module.exports = router;
