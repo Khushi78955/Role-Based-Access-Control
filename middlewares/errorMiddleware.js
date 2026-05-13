@@ -4,7 +4,7 @@ function errorMiddleware(err, req, res, next){
         success: false,
         message: err.message || "Internal Server Error",
         stack: 
-            process.env.NODE_ENV === "developement" ? err.stack : undefined
+            process.env.NODE_ENV === "development" ? err.stack : undefined
 
     })
 }

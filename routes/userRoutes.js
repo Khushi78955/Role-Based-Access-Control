@@ -7,7 +7,7 @@ const User = require("../models/User");
 const upload = require("../middlewares/uploadMiddleware");
 const cloudinary = require("../config/cloudinary");
 const adminMiddleware = require("../middlewares/adminMiddleware");
-const { redisClient } = require("../config/redis")
+
 
 router.get("/me", authMiddleware, async function(req, res){
     return res.status(200).json({
@@ -41,7 +41,7 @@ router.put("/update-profile", authMiddleware, async function(req, res){
 })
 
 
-router.post("/upload-avatar", authMiddleware, adminMiddleware, async function(req, res){
+router.post("/upload-avatar", authMiddleware, adminMiddleware, upload.single("avatar"), async function(req, res){
     try{
         const result = await cloudinary.uploader.upload(req.file.path);
         const updatedUser = await User.findByIdAndUpdate(
@@ -73,6 +73,7 @@ router.get("/all-users", authMiddleware, adminMiddleware, async function(req, re
         const limit = Number(req.query.limit) || 5;
         const skip = (page - 1) * limit;
         
+        const search = req.query.search || "";
         const totalUsers = await User.countDocuments({
             name:{
                 $regex: search,
@@ -81,7 +82,7 @@ router.get("/all-users", authMiddleware, adminMiddleware, async function(req, re
         });
         const totalPages = Math.ceil(totalUsers / limit);
 
-        const search = req.query.search || "";
+        
 
         const users = await User.find({
             name: {
@@ -111,6 +112,7 @@ router.delete("/delete-account", authMiddleware, async function(req, res){
     try{
         await User.findByIdAndDelete(req.user.id)
         res.clearCookie("token");
+        res.clearCookie("refreshToken");
         return res.status(200).json({
             message: "Account deleted permanently"
         })
@@ -122,11 +124,4 @@ router.delete("/delete-account", authMiddleware, async function(req, res){
 })
 
 
-router.get("/redis-test", async function(req, res){
-    await redisClient.set("name","khushi")
-    const value = await redisClient.get("name");
-    return res.json({
-        value
-    })
-})
 module.exports = router;

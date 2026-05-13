@@ -106,3 +106,6 @@ passport.use(new DiscordStrategy(
         } 
     }
 ))
+
+
+module.exports = passport;

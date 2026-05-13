@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { redisClient } = require("../config/redis")
+
 
 const authMiddleware = require("../middlewares/authMiddleware");
 
@@ -16,7 +16,6 @@ router.post("/create", authMiddleware, async function(req, res){
             content,
             user: req.user.id
         })
-        await redisClient.del("posts");
         return res.status(201).json({
             message: "Post created",
             post
@@ -48,9 +47,9 @@ router.get("/my-posts", authMiddleware, async function(req, res){
         const posts = await Post.find({
             user: req.user.id
         });
-        return res.status(200).json([
+        return res.status(200).json({
             posts
-        ])
+        })
     } catch(err){
         return res.status(500).json({
             message: "Something went wrong"
@@ -60,27 +59,6 @@ router.get("/my-posts", authMiddleware, async function(req, res){
 })
 
 
-router.get("/posts", async function(req, res){
-    const cachedPosts = await redisClient.get("posts");
-    if(cachedPosts){
-        return res.json({
-            source: "redis cache",
-            posts: JSON.parse(cachedPosts)
-        })
-    }
-    const posts = await Post.find();
-    await redisClient.set(
-        "posts",
-        JSON.stringify(posts),
-        {
-            EX: 60
-        }
-    )
-    return res.json({
-        source: "mongodb",
-        posts
-    })
-})
 
 
 module.exports = router;

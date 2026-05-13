@@ -66,8 +66,8 @@ const login = asyncHandler(async function login(req, res){
             throw new ApiError(400, "Invalid credentials")
         }
 
-        if(user.authProvider == "google"){
-            throw new ApiError(400, "Please login using google")
+        if(user.authProvider !== "local"){
+            throw new ApiError(400, `Please login using ${user.authProvider}`)
         }
 
         const isMatch = await bcrypt.compare(
@@ -104,96 +104,15 @@ const login = asyncHandler(async function login(req, res){
         })
 });
 
-const verifyLoginTwoFactor = asyncHandler(async function(req, res){
-    const {email, token} = req.body;
-    const user = await User.findOne({
-        email
-    })
-    if(!user){
-        throw new ApiError(404, "User not found");
-    }
 
-    const verified = speakeasy.totp.verify({
-        secret: user.twoFactorSecret,
-        encoding: "base32",
-        token
-    });
-    if(!verified){
-        throw new ApiError(400, "Invalid 2FA token")
-    }
+const logout = asyncHandler(async function logout(req, res){
+        res.clearCookie("token");
+        res.clearCookie("refreshToken");
+        return res.status(200).json({
+            message: "Logout successful"
+        })
+});
 
-    const accessToken = generateToken(user);
-    res.cookie("token", accessToken, {
-        httpOnly: true,
-        secure: false
-    })
-    return res.status(200).json({
-        message: "2FA login successful",
-        accessToken
-    })
-
-
-
-})
-
-const verifyEmail = asyncHandler(async function(req, res){
-    const { token } = req.body;
-
-    const user = await User.findOne({
-        verificationToken: token
-    })
-    if(!user){
-        throw new ApiError(400, "Invalid verification token")
-    }
-
-    user.isVerified = true;
-    user.verificationToken = undefined;
-
-    await user.save();
-
-    return res.status(200).json({
-        message: "Email verified successfully"
-    })
-})
-
-
-const sendOTP = asyncHandler(async function(req, res){
-    const { email } = req.body;
-    const user = await User.findOne({email});
-    if(!user){
-        throw newApiError(404, "User not found")
-    }
-
-    const otp = generateOTP();
-    user.otp = otp;
-    user.otpExpires = Date.now() + 5 * 60 * 1000;
-
-    await user.save();
-
-    return res.status(200).json({
-        message: "OTP generated successfully"
-    })
-})
-
-const verifyOTP = asyncHandler(async function(req, res){
-    const { email, otp } = req.body;
-    const user = await User.findOne({
-        email, 
-        otp,
-        otpExpires: {$gt: Date.now()}
-    })
-    if(!user){
-        throw new ApiError(404, "Invalid or expired OTP");
-    }
-
-    user.otp = undefined;
-    user.otpExpires = undefined;
-
-    await user.save();
-    return res.status(400).json({
-        message: "OTP verified successfully"
-    })
-})
 
 const refreshAccessToken = asyncHandler(async function(req, res){
     const refreshToken = req.cookies.refreshToken;
@@ -222,6 +141,70 @@ const refreshAccessToken = asyncHandler(async function(req, res){
     })
 
 })
+
+
+
+
+const verifyEmail = asyncHandler(async function(req, res){
+    const { token } = req.body;
+
+    const user = await User.findOne({
+        verificationToken: token
+    })
+    if(!user){
+        throw new ApiError(400, "Invalid verification token")
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+
+    await user.save();
+
+    return res.status(200).json({
+        message: "Email verified successfully"
+    })
+})
+
+
+const sendOTP = asyncHandler(async function(req, res){
+    const { email } = req.body;
+    const user = await User.findOne({email});
+    if(!user){
+        throw new ApiError(404, "User not found")
+    }
+
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpires = Date.now() + 5 * 60 * 1000;
+
+    await user.save();
+
+    return res.status(200).json({
+        message: "OTP generated successfully"
+    })
+})
+
+
+const verifyOTP = asyncHandler(async function(req, res){
+    const { email, otp } = req.body;
+    const user = await User.findOne({
+        email, 
+        otp,
+        otpExpires: {$gt: Date.now()}
+    })
+    if(!user){
+        throw new ApiError(404, "Invalid or expired OTP");
+    }
+
+    user.otp = undefined;
+    user.otpExpires = undefined;
+
+    await user.save();
+    return res.status(200).json({
+        message: "OTP verified successfully"
+    })
+})
+
 
 
 const forgotPassword = asyncHandler(async function(req, res){
@@ -271,12 +254,6 @@ const resetPassword = asyncHandler(async function(req, res){
 })
 
 
-const logout = asyncHandler(async function logout(req, res){
-        res.clearCookie("token");
-        return res.status(200).json({
-            message: "Logout successful"
-        })
-});
 
 
 const enableTwoFactor = asyncHandler(async function(req, res){
@@ -311,6 +288,41 @@ const verifyTwoFactor = asyncHandler(async function(req, res){
         message: "2FA enabled successfully"
     })
 })
+
+
+const verifyLoginTwoFactor = asyncHandler(async function(req, res){
+    const {email, token} = req.body;
+    const user = await User.findOne({
+        email
+    })
+    if(!user){
+        throw new ApiError(404, "User not found");
+    }
+
+    const verified = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: "base32",
+        token
+    });
+    if(!verified){
+        throw new ApiError(400, "Invalid 2FA token")
+    }
+
+    const accessToken = generateToken(user);
+    res.cookie("token", accessToken, {
+        httpOnly: true,
+        secure: false
+    })
+    return res.status(200).json({
+        message: "2FA login successful",
+        accessToken
+    })
+
+
+
+})
+
+
 module.exports = {
     signup,
     login,

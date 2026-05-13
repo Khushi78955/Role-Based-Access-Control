@@ -17,16 +17,12 @@ const notFound = require("./middlewares/notFound");
 const errorMiddleware = require("./middlewares/errorMiddleware");
 const session = require("express-session");
 
-const { connectRedis } = require("./config/redis")
-connectRedis();
-
-
 app.use(express.json());
 app.use(helmet())
 app.use(limiter);
 app.use(cookieParser());
 app.use(session({
-    secret: "secretkey",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false
 }));
