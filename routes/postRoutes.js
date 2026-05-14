@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
 
-
-
 const authMiddleware = require("../middlewares/authMiddleware");
 
 const Post = require("../models/Post");
+ 
+const {redisClient } = require("../config/redis")
 
 
 router.post("/create", authMiddleware, async function(req, res){
@@ -16,6 +16,9 @@ router.post("/create", authMiddleware, async function(req, res){
             content,
             user: req.user.id
         })
+        
+        await redisClient.del("posts");
+
         return res.status(201).json({
             message: "Post created",
             post
@@ -42,6 +45,7 @@ router.get("/all", async function(req, res){
     
 })
 
+
 router.get("/my-posts", authMiddleware, async function(req, res){
     try{
         const posts = await Post.find({
@@ -58,7 +62,50 @@ router.get("/my-posts", authMiddleware, async function(req, res){
     
 })
 
+router.get("/posts", async function(req, res){
+    const cachedPosts = await redisClient.get("posts");
+    if(cachedPosts){
+        return res.json({
+            source: "redis cache",
+            posts: JSON.parse(cachedPosts),
 
+        })
+    }
 
+    const posts = await Post.find();
+    await redisClient.set(
+        "posts", 
+        JSON.stringify(posts),
+        {
+            EX: 60
+        }
+    );
+
+    return res.json({
+        source: "mongodb",
+        posts
+    })
+
+})
+
+router.get("/rate-limit-test", async function(req, res){
+    const ip = req.ip;
+    const requests = await redisClient.get(ip);
+    if(requests>5){
+        return res.status(429).json({
+            message: "Too many requests"
+        })
+    }
+    await redisClient.set(
+        ip,
+        Number(requests || 0) + 1,
+        {
+            EX : 60
+        }
+    )
+    return res.json({
+        message: "Request allowed"
+    })
+})
 
 module.exports = router;

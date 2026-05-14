@@ -16,6 +16,7 @@ const postRoutes = require("./routes/postRoutes");
 const notFound = require("./middlewares/notFound");
 const errorMiddleware = require("./middlewares/errorMiddleware");
 const session = require("express-session");
+const {connectRedis} = require("./config/redis")
 
 app.use(express.json());
 app.use(helmet())
