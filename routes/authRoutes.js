@@ -21,7 +21,9 @@ router.post("/enable-2fa", authMiddleware, enableTwoFactor);
 router.post("/verify-2fa", authMiddleware, verifyTwoFactor)
 router.post("/verify-login-2fa", verifyLoginTwoFactor)
 
+
 const generateToken = require("../utils/generateToken")
+const emailQueue = require("../queues/emailQueue")
 
 router.get("/profile", authMiddleware, function(req, res){
     return res.status(200).json({
@@ -98,6 +100,22 @@ router.get("/discord/callback",
 })
 
 
+
+router.get("/queue-test", async function(req, res){
+    await emailQueue.add(
+        "sendEmail",
+        {
+            email: "khushi@gmail.com",
+            subject: "Welcome"
+        }, 
+        {
+            attempts: 3
+        }
+    )
+    return res.json({
+        message: "Job added to queue"
+    })
+})
 
 
 module.exports = router;
